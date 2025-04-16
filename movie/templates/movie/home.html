@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Theater Booking{% endblock %}
+
+{% block content %}
+<div class="jumbotron text-center">
+    <h1 class="display-4">Welcome to Theater Booking</h1>
+    <p class="lead">Book your favorite movies with ease</p>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <h2>Now Showing</h2>
+        <div class="row">
+            {% for movie in now_showing %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <img src="{{ movie.poster_url|default:'https://via.placeholder.com/300x450' }}" class="card-img-top" alt="{{ movie.title }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ movie.title }}</h5>
+                            <p class="card-text">{{ movie.description|truncatewords:20 }}</p>
+                            <a href="{% url 'movie:movie_detail' movie.id %}" class="btn btn-primary">Book Now</a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col">
+                    <p>No movies currently showing.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <h2>Coming Soon</h2>
+        {% for movie in coming_soon %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">{{ movie.title }}</h5>
+                    <p class="card-text"><small class="text-muted">Release Date: {{ movie.release_date }}</small></p>
+                </div>
+            </div>
+        {% empty %}
+            <p>No upcoming movies.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 

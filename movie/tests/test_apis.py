@@ -2,6 +2,8 @@
 from rest_framework import status
 
 # App imports
+from movie.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+from movie.utils import StandardResultsSetPagination
 from tests.test_helpers.constants import DEFAULT_DATABASE
 from tests.test_helpers.testing import APIBaseTestCase
 
@@ -742,3 +744,103 @@ class BookTicketAPITestCase(APIBaseTestCase):
         response, status_code = response.json(), response.status_code
 
         self.assertEqual(status_code, status.HTTP_200_OK)
+
+
+class PaginationTestCase(APIBaseTestCase):
+    databases = [DEFAULT_DATABASE]
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.seed_database(DEFAULT_DATABASE)
+        self.pagination = StandardResultsSetPagination()
+
+    def test_pagination_default_size(self) -> None:
+        """Test default pagination size."""
+        headers = {"Authorization": f"Token {self.owner_token}"}
+
+        for i in range(DEFAULT_PAGE_SIZE + 5):
+            self.client.post(
+                "/api/v1/movie/",
+                {
+                    "title": f"test movie {i}",
+                    "description": f"test movie {i}",
+                    "release_date": "2020-01-01",
+                },
+                headers=headers,
+            )
+
+        response = self.client.get("/api/v1/movie/", headers=headers)
+        Logger.info(
+            {
+                "message": "get paginated movie list",
+                "response": response.content,
+                "event": "test_pagination_default_size",
+            }
+        )
+
+        data = response.json()
+        self.assertEqual(len(data["results"]), DEFAULT_PAGE_SIZE)
+        self.assertEqual(data["current_page"], 1)
+        self.assertTrue(data["total_items"] > DEFAULT_PAGE_SIZE)
+
+    def test_pagination_custom_size(self) -> None:
+        """Test custom page size."""
+        headers = {"Authorization": f"Token {self.owner_token}"}
+        custom_size = 5
+
+        for i in range(custom_size + 3):
+            self.client.post(
+                "/api/v1/movie/",
+                {
+                    "title": f"test movie {i}",
+                    "description": f"test movie {i}",
+                    "release_date": "2020-01-01",
+                },
+                headers=headers,
+            )
+
+        response = self.client.get(
+            f"/api/v1/movie/?page_size={custom_size}", headers=headers
+        )
+        Logger.info(
+            {
+                "message": "get paginated movie list with custom size",
+                "response": response.content,
+                "event": "test_pagination_custom_size",
+            }
+        )
+
+        data = response.json()
+        self.assertEqual(len(data["results"]), custom_size)
+        self.assertEqual(data["page_size"], custom_size)
+
+    def test_pagination_max_size_limit(self) -> None:
+        """Test pagination max size limit."""
+        headers = {"Authorization": f"Token {self.owner_token}"}
+        over_max_size = MAX_PAGE_SIZE + 10
+
+        for i in range(over_max_size):
+            self.client.post(
+                "/api/v1/movie/",
+                {
+                    "title": f"test movie {i}",
+                    "description": f"test movie {i}",
+                    "release_date": "2020-01-01",
+                },
+                headers=headers,
+            )
+
+        response = self.client.get(
+            f"/api/v1/movie/?page_size={over_max_size}", headers=headers
+        )
+        Logger.info(
+            {
+                "message": "get paginated movie list with over max size",
+                "response": response.content,
+                "event": "test_pagination_max_size_limit",
+            }
+        )
+
+        data = response.json()
+        self.assertEqual(len(data["results"]), MAX_PAGE_SIZE)
+        self.assertEqual(data["page_size"], MAX_PAGE_SIZE)

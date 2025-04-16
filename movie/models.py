@@ -2,6 +2,7 @@
 import uuid
 
 # Django imports
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -18,17 +19,24 @@ class Screen(models.Model):
         total_seat (int): It stores the total seat
     """
 
-    screen_number = models.IntegerField(null=False)
+    screen_number = models.IntegerField(null=False, db_index=True)
     total_seat = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["screen_number"]
+        verbose_name = "Screen"
+        verbose_name_plural = "Screens"
+
+    def clean(self):
+        if self.total_seat is not None and self.total_seat < 0:
+            raise ValidationError("Total seats cannot be negative")
 
     def __str__(self) -> str:
         return f"{self.screen_number} - {self.total_seat}"
 
 
 class SeatType(models.TextChoices):
-    """
-    SeatType: It stores the seat type
-    """
+    """Seat types available in the theater"""
 
     PLATINUM = "PLATINUM", _("Platinum")
     GOLD = "GOLD", _("Gold")
@@ -47,7 +55,7 @@ class ScreenSeatTypesMapping(models.Model):
     """
 
     seat_type = models.CharField(
-        max_length=10, choices=SeatType.choices, default=SeatType.UNKNOWN
+        max_length=10, choices=SeatType.choices, default=SeatType.SILVER
     )
     screen = models.ForeignKey(
         Screen,
@@ -68,18 +76,22 @@ class Seat(models.Model):
     Fields:
         seat_number (int): It stores the seat number
         seat_price (SeatPrice): It stores the seat price
-        raw (int): It stores the raw number of seat
+        row (int): It stores the row number of seat
         col (int): It stores the col number of seat
     """
 
-    seat_number = models.CharField(max_length=10)
-    raw = models.CharField(max_length=3)
+    seat_number = models.CharField(max_length=10, db_index=True)
+    row = models.CharField(max_length=3)
     col = models.CharField(max_length=3)
     type = models.ForeignKey(
         ScreenSeatTypesMapping,
         on_delete=models.CASCADE,
         related_name="seat_type_screen",
     )
+
+    class Meta:
+        ordering = ["row", "col"]
+        unique_together = ["row", "col", "type"]
 
     def __str__(self) -> str:
         return f"{self.seat_number}"

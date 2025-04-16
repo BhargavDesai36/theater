@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<h1>Admin Dashboard</h1>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Movies</h5>
+                <p class="card-text display-4">{{ total_movies }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Active Shows</h5>
+                <p class="card-text display-4">{{ active_shows }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Screens</h5>
+                <p class="card-text display-4">{{ total_screens }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Today's Bookings</h5>
+                <p class="card-text display-4">{{ todays_bookings }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Movies</h5>
+                <a href="{% url 'movie:movie_create' %}" class="btn btn-primary btn-sm">Add Movie</a>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for movie in recent_movies %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ movie.title }}</h6>
+                                <small>Release Date: {{ movie.release_date }}</small>
+                            </div>
+                            <a href="{% url 'movie:movie_edit' movie.id %}" class="btn btn-outline-primary btn-sm">Edit</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Bookings</h5>
+                <a href="{% url 'movie:booking_list' %}" class="btn btn-primary btn-sm">View All</a>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for booking in recent_bookings %}
+                    <div class="list-group-item">
+                        <h6 class="mb-1">{{ booking.showtime.movie.title }}</h6>
+                        <small>
+                            {{ booking.user.get_full_name }} - 
+                            {{ booking.booked_show.show_date }} at 
+                            {{ booking.showtime.start_time|time:"g:i A" }}
+                        </small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

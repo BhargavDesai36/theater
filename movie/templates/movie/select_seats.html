@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Seats - {{ show.movie.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .seat-layout {
+        display: grid;
+        gap: 10px;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    .seat {
+        width: 30px;
+        height: 30px;
+        border: 1px solid #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .seat.available { background-color: #fff; }
+    .seat.selected { background-color: #007bff; color: white; }
+    .seat.booked { background-color: #dc3545; color: white; cursor: not-allowed; }
+    .screen {
+        background: #333;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Select Seats - {{ show.movie.title }}</h1>
+<p>Show Time: {{ show.start_time|time:"g:i A" }} - {{ show.end_time|time:"g:i A" }}</p>
+
+<div class="screen">SCREEN</div>
+
+<form method="post" action="{% url 'movie:book_seats' show.id %}">
+    {% csrf_token %}
+    
+    {% for seat_type, layout in seat_layout.items %}
+        <h3>{{ seat_type }} - ₹{{ layout.price }}</h3>
+        <div class="seat-layout" style="grid-template-columns: repeat({{ layout.columns }}, 30px);">
+            {% for seat in layout.seats %}
+                <div class="seat {% if seat.id in booked_seats %}booked{% else %}available{% endif %}"
+                     data-seat-id="{{ seat.id }}"
+                     onclick="toggleSeat(this)">
+                    {{ seat.seat_number }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+
+    <input type="hidden" name="selected_seats" id="selected_seats">
+    
+    <div class="mt-4">
+        <h4>Selected Seats: <span id="seat_count">0</span></h4>
+        <h4>Total Amount: ₹<span id="total_amount">0</span></h4>
+        <button type="submit" class="btn btn-primary" id="book_button" disabled>Book Tickets</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const selectedSeats = new Set();
+    const seatPrices = {
+        {% for seat_type, layout in seat_layout.items %}
+            '{{ seat_type }}': {{ layout.price }},
+        {% endfor %}
+    };
+
+    function toggleSeat(element) {
+        if (element.classList.contains('booked')) return;
+        
+        const seatId = element.dataset.seatId;
+        if (selectedSeats.has(seatId)) {
+            selectedSeats.delete(seatId);
+            element.classList.remove('selected');
+        } else {
+            selectedSeats.add(seatId);
+            element.classList.add('selected');
+        }
+        
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const seatCount = selectedSeats.size;
+        document.getElementById('seat_count').textContent = seatCount;
+        document.getElementById('selected_seats').value = Array.from(selectedSeats).join(',');
+        document.getElementById('book_button').disabled = seatCount === 0;
+        
+        // Calculate total amount
+        let total = 0;
+        selectedSeats.forEach(seatId => {
+            const seatElement = document.querySelector(`[data-seat-id="${seatId}"]`);
+            const seatType = seatElement.closest('.seat-layout').previousElementSibling.textContent.split('-')[0].trim();
+            total += seatPrices[seatType];
+        });
+        document.getElementById('total_amount').textContent = total;
+    }
+</script>
+{% endblock %} 

@@ -21,7 +21,7 @@ from django.urls import include, path, re_path
 # External imports
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-from rest_framework import permissions
+from rest_framework import permissions, routers
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -33,9 +33,11 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+router = routers.DefaultRouter()
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/", include("movie.urls")),
+    path("api/v1/", include(router.urls)),
     path("api/v1/", include("user.urls")),
 ]
 

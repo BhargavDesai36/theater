@@ -1,5 +1,6 @@
 # Python imports
 from datetime import timedelta
+from typing import Any, Dict, List
 
 # External imports
 from rest_framework import serializers
@@ -15,6 +16,7 @@ from .models import (
     ShowDetail,
     ShowSeatPrice,
 )
+from .types import SeatTypeDict
 
 
 class SeatTypeSerializer(serializers.ModelSerializer):
@@ -30,6 +32,11 @@ class ScreenSerializer(serializers.ModelSerializer):
         model = Screen
         fields = ["id", "screen_number", "total_seat", "seat_type"]
 
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if data.get("total_seat", 0) < 0:
+            raise serializers.ValidationError("Total seats cannot be negative")
+        return data
+
 
 class SeatSerializer(serializers.Serializer):
     rows = serializers.IntegerField()
@@ -40,7 +47,17 @@ class SeatSerializer(serializers.Serializer):
 
 class AddScreenSerializer(serializers.Serializer):
     screen_number = serializers.IntegerField()
-    seat_types = SeatSerializer(many=True)
+    seat_types = serializers.ListField(child=serializers.DictField(), allow_empty=False)
+
+    def validate_seat_types(self, value: List[Dict[str, Any]]) -> List[SeatTypeDict]:
+        for seat_type in value:
+            if not all(
+                k in seat_type for k in ("seat_type", "rows", "columns", "order")
+            ):
+                raise serializers.ValidationError(
+                    "Each seat type must contain seat_type, rows, columns, and order"
+                )
+        return value
 
 
 class MovieSerializer(serializers.ModelSerializer):
@@ -97,6 +114,7 @@ class ShowDetailSerializer(serializers.ModelSerializer):
     title = serializers.CharField(source="movie.title", required=False)
     screen_number = serializers.CharField(source="screen.screen_number", required=False)
     seats = serializers.SerializerMethodField()
+    prices = serializers.ListField(child=serializers.DictField(), required=False)
 
     class Meta:
         model = ShowDetail
@@ -114,6 +132,7 @@ class ShowDetailSerializer(serializers.ModelSerializer):
             "screen_number",
             "seats",
             "booked_show",
+            "prices",
         ]
         read_only_fields = ("id", "title", "screen_number")
 
@@ -130,32 +149,10 @@ class ShowDetailSerializer(serializers.ModelSerializer):
             return seats
         return None
 
-    def validate(self, attrs) -> dict:
-        start_time = attrs["start_time"]
-        end_time = attrs["end_time"]
-
-        start_date = attrs["start_date"]
-        end_date = attrs["end_date"]
-
-        if start_time >= end_time:
-            raise serializers.ValidationError("Start time must be before end time")
-
-        if start_date >= end_date:
-            raise serializers.ValidationError("Start date must be before end date")
-
-        # check in ShowDetail if any other show is ongoing in same time and same screen
-        show_detail = ShowDetail.objects.filter(
-            start_time__range=(start_time, end_time),
-            end_time__range=(start_time, end_time),
-            start_date__range=(start_date, end_date),
-            end_date__range=(start_date, end_date),
-            screen=attrs["screen"],
-        )
-        if show_detail:
-            raise serializers.ValidationError(
-                "Another show is ongoing in same time and same screen"
-            )
-        return attrs
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if data.get("start_date") > data.get("end_date"):
+            raise serializers.ValidationError("End date must be after start date")
+        return data
 
     def save(self) -> dict:
         validated_data = self.validated_data.copy()
@@ -163,20 +160,16 @@ class ShowDetailSerializer(serializers.ModelSerializer):
         available_seats = screen.total_seat
         show_prices = validated_data.pop("show_prices")
 
-        # create show detail
         show_detail = ShowDetail.objects.create(
             **validated_data, available_seats=available_seats
         )
 
-        # set show price for each type of seats
         for show_price in show_prices:
             ShowSeatPrice.objects.create(show_detail=show_detail, **show_price)
 
-        # get start and end day from show detail
         show_start_date = show_detail.start_date
         show_end_date = show_detail.end_date
 
-        # create booked show detail for each day
         for day in range((show_end_date - show_start_date).days + 1):
             BookedShowDetail.objects.create(
                 show_detail=show_detail,
@@ -217,5 +210,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ["seats", "show_time", "show_date"]
-        read_only_fields = ("id", "show_time")
+        fields = "__all__"
+
+    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        if not data.get("seats"):
+            raise serializers.ValidationError("Seats are required")
+        return data

@@ -45,7 +45,7 @@ class AuthAPITestCase(APIBaseTestCase):
         self.assertEqual(response["first_name"], "test")
         self.assertEqual(response["last_name"], "test")
         self.assertEqual(response["email"], "test@gmail.com")
-        # TODO(chirag): add user type in the response
+        # TODO(bhargav): add user type in the response
         # self.assertEqual(response["user_type"], "User")
 
     def test_user_login(self) -> None:
@@ -73,7 +73,7 @@ class AuthAPITestCase(APIBaseTestCase):
         self.assertEqual(response["data"]["first_name"], "user")
         self.assertEqual(response["data"]["last_name"], "user")
 
-        # TODO(chirag): add user type in the response
+        # TODO(bhargav): add user type in the response
         # self.assertEqual(response["data"]["user_type"], "User")
 
     def test_reset_password(self) -> None:
