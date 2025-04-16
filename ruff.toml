@@ -1,0 +1,40 @@
+# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+select = ["E", "W", "F", "I", "N", "S", "T20", "Q", "SIM", "TD", "BLE"]
+ignore = ["E501", "E402", "S113", "SIM108", "TD003"]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["E", "W", "F", "I", "N", "S", "T20", "Q", "SIM", "TD", "BLE"]
+unfixable = []
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+    "migrations",
+    "manage.py",
+]
+
+line-length = 120
+
+# Assume Python 3.10.
+target-version = "py310"
+

@@ -1,0 +1,25 @@
+# Django-specific files
+
+# Log Files
+*.log 
+*.pot
+
+# Cache Files
+*.pyc
+__pycache__/
+./__pycache__/
+
+# Local Setting File
+local_settings.py
+
+# Database Files
+db.sqlite3
+
+#env file
+.env
+
+# ignore .vscode file
+.vscode/
+
+# ignore postgres data
+postgres-data/
